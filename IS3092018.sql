@@ -53,3 +53,53 @@ asso_title varchar(59),
 asso_url varchar(59),
 constraint association_PK primary key (asso_id)
 );
+
+create table budget(
+budget_id int,
+budget_platfee int,
+budget_donprocfee int,
+budget_cost int,
+constraint budget_PK primary key (budget_id)
+);
+
+drop table focusarea;
+create table focusarea(
+focus_id int,
+focus_area varchar(59),
+constraint focusarea_PK primary key (focus_id)
+);
+
+create table protype(
+type_id int,
+type_info varchar(599),
+constraint protype_PK primary key (type_id)
+);
+
+create table donationlevel(
+level_id int,
+level_amount int,
+level_description varchar (599),
+constraint donationlevel_PK primary key (level_id)
+);
+
+create table donation(
+don_ordnr int,
+don_date date,
+don_dispname varchar(59),
+don_nn int, /*0 = yes, 1 = no*/
+don_mail int, /*0 = yes, 1 = no*/
+constraint donation_PK primary key (don_ordnr)
+);
+
+create table donationcart(
+pro_id int,
+don_ordnr int,
+cart_amount int
+);
+
+
+
+
+
+
+
