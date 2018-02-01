@@ -1,24 +1,40 @@
+drop table typeasso;
+drop table focusasso;
+
+drop table budget;
+drop table donationlevel;
+
+drop table association;
+drop table donationcart;
+drop table donation;
+
+drop table protype;
+drop table focusarea;
+
+drop table projects;
 drop table accounts;
 drop table address;
-drop table projects;
-drop table association;
-drop table budget;
-drop table donation;
-drop table donationcart;
-drop table donationlevel;
-drop table focusarea;
-drop table projects;
-drop table protype;
+
+create table address(
+    add_id number generated always as identity(start with 1 increment by 1) primary key,
+    add_mstreet varchar(59) not null,
+    add_ostreet varchar(59),
+    add_city varchar(59) not null,
+    add_state varchar(59) not null,
+    add_pcode int not null
+);
 
 create table accounts(
     acc_uname varchar(59) primary key,
     acc_pass varchar(59) not null,
     acc_email varchar(59) not null,
-    acc_fname varchar(59) not null,
-    acc_lname varchar(59) not null,
+    acc_fname varchar(59),
+    acc_lname varchar(59),
     acc_type varchar(59) not null, 
     acc_phone int,
-    acc_heardabout varchar(99)
+    acc_heardabout varchar(99),
+    add_id int,
+    foreign key (add_id) references address(add_id)
 );
 
 create table association(
@@ -41,7 +57,9 @@ create table projects(
     pro_whydo varchar(59),
     pro_status varchar(59) not null,
     acc_uname varchar(59) not null,
-    foreign key (acc_uname) references accounts(acc_uname)
+    add_id int not null,
+    foreign key (acc_uname) references accounts(acc_uname),
+    foreign key (add_id) references address(add_id)
 );
 
 create table donationlevel(
@@ -59,15 +77,6 @@ create table budget(
     budget_cost int not null,
     pro_id int not null,
     foreign key (pro_id) references projects(pro_id)
-);
-
-create table address(
-    add_id number generated always as identity(start with 1 increment by 1) primary key,
-    add_mstreet varchar(59) not null,
-    add_ostreet varchar(59),
-    add_city varchar(59) not null,
-    add_state varchar(59) not null,
-    add_pcode int not null
 );
 
 create table protype(
@@ -110,6 +119,8 @@ create table donationcart(
     pro_id int,
     don_ordnr int,
     cart_amount int not null,
+    acc_uname varchar(59),
     primary key (pro_id, don_ordnr),
-    foreign key (don_ordnr) references donation(don_ordnr)
+    foreign key (don_ordnr) references donation(don_ordnr),
+    foreign key (acc_uname) references accounts(acc_uname)
 );
