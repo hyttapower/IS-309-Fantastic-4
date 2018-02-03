@@ -46,14 +46,14 @@ create table accounts(
     foreign key (add_id) references address(add_id)
 );
 
-INSERT INTO accounts (acc_uname, acc_pass, acc_email, acc_fname, acc_lname, acc_type, acc_phone, acc_heardabout, add_id)
-VALUES ('Morten', 'ost', 'hello@hotmail.com', 'Morten', 'Hansen', 'Donor', '111 222 333', 'Heard about you from facebook', '001'), 
+INSERT INTO accounts (acc_uname, acc_pass, acc_email, acc_fname, acc_lname, acc_type, acc_phone, acc_heardabout, add_id) /*acc_type, private og bussnies*/
+VALUES ('Morten', 'ost', 'hello@hotmail.com', 'Morten', 'Hansen', 'Private', 111222333, 'Heard about you from facebook', 1);
 
 INSERT INTO accounts (acc_uname, acc_pass, acc_email, acc_fname, acc_lname, acc_type, acc_phone, acc_heardabout, add_id)
-VALUES ('Kim', 'brød', 'godbey@hotmail.com', 'Kim', 'Karsel', 'Project Leader', '666 555 444', 'Heard about you from in my workplace', '002');
+VALUES ('Kim', 'brød', 'godbey@hotmail.com', 'Kim', 'Karsel', 'Business', 666555444, 'Heard about you from in my workplace', 2);
 
 INSERT INTO accounts (acc_uname, acc_pass, acc_email, acc_fname, acc_lname, acc_type, acc_phone, acc_heardabout, add_id)
-VALUES ('Vegar', 'kneip', 'Whygod@hotmail.com', 'Vegar', 'Lee', 'Volunteer', '777 888 999', 'Found you true a add', '003');
+VALUES ('Vegar', 'kneip', 'Whygod@hotmail.com', 'Vegar', 'Lee', 'Private', 777888999, 'Found you true a add', 3);
 
 create table association(
     asso_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -64,9 +64,13 @@ create table association(
 );
 
 INSERT INTO association (asso_title, asso_url, acc_uname)
-VALUES ('The great ones', 'http/The great ones.com', 'Morten'),
-('The bad ones', 'http/The bad ones.com', 'Kim'),
-('FANTASTIC4', 'http/FANTASTIC4.com', 'Vegar');
+VALUES ('The great ones', 'http/The great ones.com', 'Morten');
+
+INSERT INTO association (asso_title, asso_url, acc_uname)
+VALUES('The bad ones', 'http/The bad ones.com', 'Kim');
+
+INSERT INTO association (asso_title, asso_url, acc_uname)
+VALUES ('FANTASTIC4', 'http/FANTASTIC4.com', 'Vegar');
 
 create table projects(
     pro_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -75,7 +79,7 @@ create table projects(
     pro_description varchar(599),
     pro_crdate date default sysdate,
     pro_goal int not null,
-    pro_deadline date not null,
+    pro_deadline VARCHAR(59) not null,
     pro_howdo varchar(59),
     pro_whydo varchar(59),
     pro_status varchar(59) not null,
@@ -85,10 +89,15 @@ create table projects(
     foreign key (add_id) references address(add_id)
 );
 
-INSERT INTO projects (pro_title, pro_subtitle, pro_description, pro_crdate, pro_goals, pro_deadline, pro_howdo, pro_whydo, pro_status, acc_uane, add_id)
-VALUES ('Park', 'Better park', 'We want to make a better park', '11.01.18', '$10.000', '11.05.18', 'Work', 'google', 'Submitted', 'Morten', '001'),
-('School prosject', 'IS-309', 'We want to make a great prosject so we can get a good grade', '07.02.18', '$1.000', '28.02.18', 'School', 'Teacher gave us a link', 'Open', 'Kim', '002'),
-('World counqest', 'Suprem leader', 'We want to make a better world', '03.002.18', '$100.000.000.000', '28.05.18', 'School', 'google', 'Underway', 'Vegar', '003');
+INSERT INTO projects (pro_title, pro_subtitle, pro_description, pro_goal, pro_deadline, pro_howdo, pro_whydo, pro_status, acc_uname, add_id)
+VALUES ('Park', 'Better park', 'We want to make a better park', 10000, '11.05.18', 'Work', 'google', 'Submitted', 'Morten', 1);
+
+INSERT INTO projects (pro_title, pro_subtitle, pro_description, pro_goal, pro_deadline, pro_howdo, pro_whydo, pro_status, acc_uname, add_id)
+VALUES ('School prosject', 'IS-309', 'We want to make a great prosject so we can get a good grade', 
+1000, '28.02.18', 'School', 'Teacher gave us a link', 'Open', 'Kim', 2);
+
+INSERT INTO projects (pro_title, pro_subtitle, pro_description, pro_goal, pro_deadline, pro_howdo, pro_whydo, pro_status, acc_uname, add_id)
+VALUES ('World counqest', 'Suprem leader', 'We want to make a better world', 100000000000, '28.05.18', 'School', 'google', 'Underway', 'Vegar', 3);
 
 create table donationlevel(
     level_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -99,19 +108,31 @@ create table donationlevel(
 );
 
 INSERT INTO donationlevel (level_amount, level_description, pro_id)
-VALUES ('$10', 'Thank you', '001'), ('$20', 'Thank you!', '002'), ('$30', 'Thank you!!', '003');
+VALUES (10, 'Thank you', 1);
+
+INSERT INTO donationlevel (level_amount, level_description, pro_id)
+VALUES (20, 'Thank you!', 2);
+
+INSERT INTO donationlevel (level_amount, level_description, pro_id)
+VALUES (30, 'Thank you!!', 3);
 
 create table budget(
     budget_id number generated always as identity(start with 1 increment by 1) primary key,
     budget_platfee int default 35, /* $35 */
-    budget_donprocfee int default 1.03, /* 3% */
+    budget_donprocfee int default 1.03, /* 3% = 1,03*/
     budget_cost int not null,
-    pro_id int not null,
+    pro_id int not null unique,
     foreign key (pro_id) references projects(pro_id)
 );
 
-INSERT INTO bugdet (bugdet_platfee, bugdet_donprocfee, bugdet_cost, prod_id)
-VALUES ('$35', '3%', '$10.000', '001'), ('$35', '3%', '$2.000', '002'),('$35', '3%', '$5.000', '003');
+INSERT INTO budget (budget_platfee, budget_donprocfee, budget_cost, pro_id)
+VALUES (35, 3, 10000, 1); 
+
+INSERT INTO budget (budget_platfee, budget_donprocfee, budget_cost, pro_id)
+VALUES(35, 3, 2000, 2);
+
+INSERT INTO budget (budget_platfee, budget_donprocfee, budget_cost, pro_id)
+VALUES(35, 3, 5000, 3);
 
 create table protype(
     type_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -119,7 +140,13 @@ create table protype(
 );
 
 INSERT INTO protype (type_info)
-VALUES ('Individual'), ('Group or organization'), ('individual');
+VALUES ('Type1'); 
+
+INSERT INTO protype (type_info)
+VALUES('Type2'); 
+
+INSERT INTO protype (type_info)
+VALUES('Type3');
 
 create table typeAsso (
     type_id int,
@@ -130,7 +157,13 @@ create table typeAsso (
 );
 
 INSERT INTO typeAsso (type_id, pro_id)
-VALUES ('010', '001'), ('020', '002'), ('030', '003');
+VALUES (1, 3); 
+
+INSERT INTO typeAsso (type_id, pro_id)
+VALUES(2, 1); 
+
+INSERT INTO typeAsso (type_id, pro_id)
+VALUES(3, 2);
 
 create table focusarea(
     focus_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -138,7 +171,13 @@ create table focusarea(
 );
 
 INSERT INTO focusarea (focus_area)
-VALUES ('Public health'), ('Sharing'), ('School');
+VALUES ('Public Health');
+
+INSERT INTO focusarea (focus_area)
+VALUES('Sharing'); 
+
+INSERT INTO focusarea (focus_area)
+VALUES('School');
 
 create table focusAsso (
     focus_id int,
@@ -149,21 +188,32 @@ create table focusAsso (
 );
 
 INSERT INTO focusAsso (focus_id, pro_id)
-VALUES ('111', '001'), ('222', '002'), ('333', '003');
+VALUES (1, 2);
+
+INSERT INTO focusAsso (focus_id, pro_id)
+VALUES(2, 1); 
+
+INSERT INTO focusAsso (focus_id, pro_id)
+VALUES(3, 3);
 
 create table donation(
     don_ordnr number generated always as identity(start with 1 increment by 1) primary key,
     don_date date default sysdate,
     don_dispname varchar(59),
-    don_anon int default 0, /*0 = yes, 1 = no*/
-    don_mail int default 0, /*0 = yes, 1 = no*/
+    don_anon int default 0, /*1 = yes, 0 = no*/
+    don_mail int default 0, /*1 = yes, 0 = no*/
     acc_uname varchar(59) not null,
     foreign key (acc_uname) references accounts(acc_uname)
 );
 
-INSERT INTO donation (don_date, don_dispname, don_anon, don_mail, acc_uname)
-VALUES ('01.02.18', 'Yoda', '1', '1', 'Morten'), ('03.02.18', 'Duck', '0', '0', 'Kim'), 
-('04.02.18', 'Beja', '1', '1', 'Vegar');
+INSERT INTO donation (don_dispname, don_anon, don_mail, acc_uname)
+VALUES ('Yoda', '1', '1', 'Morten'); 
+
+INSERT INTO donation ( don_dispname, don_anon, don_mail, acc_uname)
+VALUES ('Duck', '0', '0', 'Kim'); 
+
+INSERT INTO donation (don_dispname, don_anon, don_mail, acc_uname)
+VALUES ('Beja', '1', '1', 'Vegar');
 
 create table donationcart(
     pro_id int,
