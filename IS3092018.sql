@@ -24,6 +24,9 @@ create table address(
     add_pcode int not null
 );
 
+INSERT INTO adress (add_id, add_mstreet, add_ostreet, add_city, add_state, add_pcode)
+VALUES ();
+
 create table accounts(
     acc_uname varchar(59) primary key,
     acc_pass varchar(59) not null,
@@ -37,6 +40,11 @@ create table accounts(
     foreign key (add_id) references address(add_id)
 );
 
+INSERT INTO accounts (acc_uname, acc_pass, acc_email, acc_fname, acc_lname, acc_type, acc_phone, acc_heardabout)
+VALUES ('Morten', '001', 'hello@hotmail.com', 'Morten', 'Hansen', 'Donor', '111 222 333', 'Heard about you from facebook'), 
+('Kim', '002', 'godbey@hotmail.com', 'Kim', 'Karsel', 'Project Leader', '666 555 444', 'Heard about you from in my workplace'),
+('Vegar', '003', 'Whygod@hotmail.com', 'Vegar', 'Lee', 'Volunteer', '777 888 999', 'Found you true a add');
+
 create table association(
     asso_id number generated always as identity(start with 1 increment by 1) primary key,
     asso_title varchar(59) not null,
@@ -44,6 +52,11 @@ create table association(
     acc_uname varchar(59) not null,
     foreign key (acc_uname) references accounts(acc_uname)
 );
+
+INSERT INTO association (asso_title, asso_url)
+VALUES ('The great ones', 'http/The great ones.com'),
+('The bad ones', 'http/The bad ones.com'),
+('FANTASTIC4', 'http/FANTASTIC4.com');
 
 create table projects(
     pro_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -62,6 +75,11 @@ create table projects(
     foreign key (add_id) references address(add_id)
 );
 
+INSERT INTO projects (pro_title, pro_subtitle, pro_description, pro_crdate, pro_goals, pro_deadline, pro_howdo, pro_whydo, pro_status)
+VALUES ('Park', 'Better park', 'We want to make a better park', '11.01.18', '$10.000', '11.05.18', 'Work', 'google', 'Submitted'),
+('School prosject', 'IS-309', 'We want to make a great prosject so we can get a good grade', '07.02.18', '$1.000', '28.02.18', 'School', 'Teacher gave us a link', 'Open'),
+('World counqest', 'Suprem leader', 'We want to make a better world', '03.002.18', '$100.000.000.000', '28.05.18', 'School', 'google', 'Underway');
+
 create table donationlevel(
     level_id number generated always as identity(start with 1 increment by 1) primary key,
     level_amount int not null,
@@ -69,6 +87,9 @@ create table donationlevel(
     pro_id int not null,
     foreign key (pro_id) references projects(pro_id)
 );
+
+INSERT INTO donationlevel (level_amount, level_description)
+VALUES ('$10', 'Thank you'), ('$20', 'Thank you!'), ('$30', 'Thank you!!');
 
 create table budget(
     budget_id number generated always as identity(start with 1 increment by 1) primary key,
@@ -79,10 +100,16 @@ create table budget(
     foreign key (pro_id) references projects(pro_id)
 );
 
+INSERT INTO bugdet (bugdet_platfee, bugdet_donprocfee, bugdet_cost)
+VALUES ('$35', '3%', '$10.000'), ('$35', '3%', '$2.000'),('$35', '3%', '$5.000');
+
 create table protype(
     type_id number generated always as identity(start with 1 increment by 1) primary key,
     type_info varchar(59)
 );
+
+INSERT INTO protype (type_info)
+VALUES ('Individual'), ('Group or organization'), ('individual');
 
 create table typeAsso (
     type_id int,
