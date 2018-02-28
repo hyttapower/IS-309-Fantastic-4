@@ -1,12 +1,12 @@
 /*
 Create a new, basic account, providing the requirement data elements and a few 
-optional ones.  The procedure should take as input values for the account’s 
+optional ones.  The procedure should take as input values for the accountâ€™s 
 attributes and insert them into the table used to store data about accounts.  
 Values for the account email, account password, and account type should not be 
-NULL.  The account type value should conform to this attribute’s domain {‘Group 
-or organization’, ‘Individual’}.  The procedure should be able to handle cases 
-where alternative capitalization is used for these values (e.g. ‘individual’, 
-‘Group or Organization’).  If an account with the same email address has already 
+NULL.  The account type value should conform to this attributeâ€™s domain {â€˜Group 
+or organizationâ€™, â€˜Individualâ€™}.  The procedure should be able to handle cases 
+where alternative capitalization is used for these values (e.g. â€˜individualâ€™, 
+â€˜Group or Organizationâ€™).  If an account with the same email address has already 
 been created, raise an exception with the appropriate message and do not create 
 the account.  The procedure should create a new value for account_id and return 
 it.  As an optional bonus requirement, can you verify that the email address has 
@@ -30,17 +30,17 @@ END;
 
 /*
 Create a new project in the system.  The procedure should take as input values 
-for the project’s attributes and insert them into the table used to store data 
+for the projectâ€™s attributes and insert them into the table used to store data 
 about projects.  Values for the project title, goal, deadline, creation date, 
 description, city, state, postal code, and status are required.  The default 
-value for status (if none is provided) is ‘Submitted’.  The project must also be 
+value for status (if none is provided) is â€˜Submittedâ€™.  The project must also be 
 associated with an existing account.  If the account_id value provided does not 
 match an existing account, an appropriate error message should be shown and no 
 project should be inserted.  The value of the goal should be greater or equal to 
 zero.  If no creation date is provided, then the current date should be used.  
 The project deadline should be later than the creation date.  The project status 
 values should be limited to the domain.  The volunteer need value should be in 
-the domain {‘yes’, ‘no’}.  The procedure should generate a value for the project 
+the domain {â€˜yesâ€™, â€˜noâ€™}.  The procedure should generate a value for the project 
 id and return this value.
 */
 p_project_id        OUT INTEGER,
@@ -143,8 +143,45 @@ p_project_ID            IN INTEGER,
 p_focusArea             IN VARCHAR
 )
 IS
+counter number;
+errMsg_txt varchar(50);
+ex_error exception;
 BEGIN
-    NULL;
+    if p_focusArea is NULL THEN
+    errMsg_txt := 'The input ' || p_focusArea || ' is NULL.';
+    RAISE ex_error;
+    
+    elsif p_project_ID < 0 then
+    errMsg_txt := 'The input parameter ' || p_project_ID || ' is negative';
+    RAISE ex_error;    
+    end if;
+    
+    select count(*)
+    into counter
+    from I_PROJECT
+    where I_PROJECT.PROJECT_ID = p_project_ID;
+    
+    if counter = 0 then
+    errMSG_txt := 'Project ID ' || p_project_id || ' not found.';
+    RAISE ex_error;
+    end if;
+    
+    insert into I_FOCUS_AREA (FOCUS_AREA_NAME)
+    values (p_focusArea);
+   
+    insert into I_PROJ_FOCUSAREA (PROJECT_ID, FOCUS_AREA_NAME)
+    values (p_project_ID, p_focusArea);
+    
+    COMMIT;
+    
+    EXCEPTION
+    WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is: ' || SQLERRM);
+    ROLLBACK;
 END;
 /
 
