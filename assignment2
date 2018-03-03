@@ -1,0 +1,398 @@
+-- 1)
+create or replace procedure CREATE_GIVING_LEVEL_SP (
+p_projectID             IN INTEGER,
+p_givingLevelAmt        IN INTEGER,   -- Must be > zero or NULL
+p_givingDescription     IN VARCHAR     -- Must not be NULL
+)
+IS
+    errMsg_txt          varchar(200);
+    ex_error            exception;
+    lv_projectID_num    i_project.project_id%type := null;
+    lv_amount_num       i_giving_level.giving_level_amount%type := null;
+    counter             number := null;
+    
+cursor cur_giving_lvl is
+    select project_id, giving_level_amount
+    from i_giving_level
+    where project_id = p_projectID and giving_level_amount = p_givingLevelAmt;
+
+BEGIN
+-- Checks to see if the ID is null
+if p_projectID is null then
+    errMsg_txt := 'The ID is null.';
+    raise ex_error;
+end if;
+
+-- Counts the number of ID's equal to the input. If the result is 0, then an ID was not found.
+select count(*)
+    into counter
+    from I_PROJECT
+    where I_PROJECT.PROJECT_ID = p_projectID;
+
+if counter = 0 then
+    errMSG_txt := 'Project ID ' || p_projectID || ' not found.';
+    raise ex_error;
+end if;
+
+-- Checks to see if the description or amount is null, raises error if they are.
+if p_givingDescription is null then
+    errMsg_txt := 'The description is null.';
+    raise ex_error;
+elsif p_givingLevelAmt is null then
+    errMsg_txt := 'The amount is null.';
+    raise ex_error;
+end if;
+
+-- Loops through our table to either insert, or update
+OPEN cur_giving_lvl;
+LOOP
+    FETCH cur_giving_lvl into lv_projectID_num, lv_amount_num;
+    IF lv_projectID_num = p_projectID AND lv_amount_num = p_givingLevelAmt THEN
+        UPDATE i_giving_level
+        SET giving_level_description = p_givingDescription
+        WHERE project_id = p_projectID AND giving_level_amount = p_givingLevelAmt;
+    ELSE
+        insert into i_giving_level (project_id, giving_level_amount, giving_level_description)
+        values (p_projectID, p_givingLevelAmt, p_givingDescription);
+    END IF;
+    EXIT WHEN cur_giving_lvl%NOTFOUND;
+END LOOP;
+
+COMMIT;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('No data was found.');
+    ROLLBACK;
+WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is: ' || SQLERRM);
+    ROLLBACK;
+END;
+
+-- 2)
+create sequence account_id_sq
+start with 8
+increment by 1;
+
+create or replace procedure CREATE_ACCOUNT_SP (
+  p_account_id      OUT INTEGER,
+  p_email           IN VARCHAR,   -- must not be NULL
+  p_password        IN VARCHAR,   -- must not be NULL
+  p_location_name   IN VARCHAR,   -- must not be NULL
+  p_account_type    IN VARCHAR,   -- should have value of 'Group or organization' or 'Individual'
+  p_first_name      IN VARCHAR,
+  p_last_name       IN VARCHAR
+)
+IS
+    ex_error            EXCEPTION;
+    errMsg_txt          VARCHAR(100) := NULL;
+    lv_email_txt        i_account.account_email%TYPE := NULL;
+    lv_account_type_txt i_account.account_type%TYPE := NULL;
+    
+CURSOR cur_email IS 
+    select lower(account_email)
+    from i_account
+    where lower(account_email) = lower(p_email);
+
+BEGIN
+-- Checks if email is null and makes sure the email entered is not in use.
+IF p_email IS NULL THEN
+    errMsg_txt := 'The email is null.';
+    RAISE ex_error;
+END IF;
+
+-- Loops through existing emails to find one that is in use.
+OPEN cur_email;
+LOOP
+    FETCH cur_email into lv_email_txt;
+    EXIT WHEN cur_email%NOTFOUND;
+    IF lower(p_email) = lower(lv_email_txt) THEN
+    errMsg_txt := 'The email "' || lv_email_txt || '" is in use. Try again with another email.';
+    RAISE ex_error;
+    END IF;
+END LOOP;
+
+-- Checks if password and location name is null.
+IF p_password IS NULL THEN
+    errMsg_txt := 'The password entered is not valid.';
+    RAISE ex_error;
+END IF;
+IF p_location_name IS NULL THEN
+    errMsg_txt := 'The location entered is not valid.';
+    RAISE ex_error;
+END IF;
+
+-- Checks if account type is null and not a valid entry. Valid entries: 'individual', 'group and organization'.
+IF p_account_type IS NULL THEN
+    errMsg_txt := 'The account type entered is not valid.';
+    RAISE ex_error;
+ELSIF lower(p_account_type) != 'individual' AND lower(p_account_type) != 'group or organization' THEN
+    errMsg_txt := 'Not a correct account type.';
+    RAISE ex_error;
+ELSIF lower(p_account_type) = 'individual' THEN 
+    lv_account_type_txt := 'Individual';
+ELSIF lower(p_account_type) = 'group or organization' THEN
+    lv_account_type_txt := 'Group or organization';
+ELSE
+    errMsg_txt := 'How did you get here? You are not supposed to be here.';
+    RAISE ex_error;
+END IF;
+
+-- Inserts into the database.
+p_account_id := account_id_sq.nextval;
+INSERT INTO i_account (account_id, account_email, account_password, account_type, account_first_name, account_last_name, account_location_name)
+VALUES (p_account_id, p_email, p_password, lv_account_type_txt, p_first_name, p_last_name, p_location_name);
+COMMIT;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('No data here bro, it is NULL.');
+    ROLLBACK;
+WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is:  ' || SQLERRM);
+    ROLLBACK;
+END;
+
+-- 3)
+create or replace procedure ADD_FOCUSAREA_SP (
+p_project_ID            IN INTEGER,
+p_focusArea             IN VARCHAR
+)
+IS
+counter number;
+errMsg_txt varchar(200);
+ex_error exception;
+lv_focusAreaCheck_txt   I_FOCUS_AREA.FOCUS_AREA_NAME%type := null;
+lv_focusArea_txt        I_PROJ_FOCUSAREA.FOCUS_AREA_NAME%type := null;
+lv_proID_num            I_PROJ_FOCUSAREA.PROJECT_ID%type := null;
+
+cursor cur_focusArea is
+    select focus_area_name
+    from i_focus_area
+    where focus_area_name = p_focusArea;
+    
+cursor cur_focusArea_keyCheck is
+    select focus_area_name, project_id
+    from i_proj_focusarea
+    where focus_area_name = p_focusArea and project_id = p_project_ID;
+
+BEGIN
+    if p_focusArea is NULL THEN
+    errMsg_txt := 'The focus area input ' || p_focusArea || ' is NULL.';
+    RAISE ex_error;
+
+    elsif p_project_ID is NULL THEN
+    errMsg_txt := 'The ID input ' || p_project_ID || ' is NULL.';
+    RAISE ex_error;
+
+    elsif p_project_ID < 0 then
+    errMsg_txt := 'The input parameter ' || p_project_ID || ' is negative';
+    RAISE ex_error;    
+    end if;
+
+    select count(*)
+    into counter
+    from I_PROJECT
+    where I_PROJECT.PROJECT_ID = p_project_ID;
+
+    if counter = 0 then
+    errMSG_txt := 'Project ID ' || p_project_id || ' not found.';
+    RAISE ex_error;
+    end if;
+
+open cur_focusArea;
+fetch cur_focusArea into lv_focusareaCheck_txt;
+if lv_focusareaCheck_txt is null then
+    errMSG_txt := 'The focus area "' || p_focusArea || '" is invalid.';
+    raise ex_error;
+end if;
+
+OPEN cur_focusArea_keyCheck;
+FETCH cur_focusArea_keyCheck into lv_focusarea_txt, lv_proID_num;
+    IF lv_focusarea_txt = p_focusArea AND lv_proID_num = p_project_ID THEN
+        errMSG_txt := 'The combination of focus area "' || p_focusArea || '" and the ID "' || p_project_ID || '" already exists.';
+        RAISE ex_error;
+    END IF;
+
+    insert into I_PROJ_FOCUSAREA (PROJECT_ID, FOCUS_AREA_NAME)
+    values (p_project_ID, p_focusArea);
+
+COMMIT;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('No data here bro, it is NULL.');
+    ROLLBACK;
+    WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is: ' || SQLERRM);
+    ROLLBACK;
+END;
+
+-- 4)
+create or replace procedure ADD_PROJTYPE_SP (
+p_project_ID            IN INTEGER,
+p_projType              IN VARCHAR
+)
+IS
+counter number;
+errMsg_txt varchar(200);
+ex_error exception;
+lv_projTypeCheck_txt   i_project_type.project_type_name%type := null;
+lv_projType_txt        i_proj_projtype.project_type_name%type := null;
+lv_proID_num           i_proj_projtype.PROJECT_ID%type := null;
+
+cursor cur_projType is
+    select project_type_name
+    from i_project_type
+    where project_type_name = p_projType;
+
+cursor cur_projType_keyCheck is
+    select project_type_name, project_id
+    from i_proj_projtype
+    where project_type_name = p_projType and project_id = p_project_ID;
+
+BEGIN
+    if p_projType is NULL THEN
+    errMsg_txt := 'The input project type is NULL.';
+    RAISE ex_error;
+    
+    elsif p_project_ID is NULL THEN
+    errMsg_txt := 'The input ID is NULL.';
+    RAISE ex_error;
+
+    elsif p_project_ID < 0 then
+    errMsg_txt := 'The input parameter ' || p_project_ID || ' is negative';
+    RAISE ex_error;    
+    end if;
+
+    select count(*)
+    into counter
+    from I_PROJECT
+    where I_PROJECT.PROJECT_ID = p_project_ID;
+
+    if counter = 0 then
+    errMSG_txt := 'Project ID ' || p_project_id || ' not found.';
+    RAISE ex_error;
+    end if;
+    
+open cur_projType;
+fetch cur_projType into lv_projTypeCheck_txt;
+if lv_projTypeCheck_txt is null then
+    errMSG_txt := 'The project type "' || p_projType || '" is invalid.';
+    raise ex_error;
+end if;
+
+OPEN cur_projType_keyCheck;
+FETCH cur_projType_keyCheck into lv_projType_txt, lv_proID_num;
+    IF lv_projType_txt = p_projType AND lv_proID_num = p_project_ID THEN
+        errMSG_txt := 'The combination of project type "' || p_projType || '" and the ID "' || p_project_ID || '" already exists.';
+        RAISE ex_error;
+    END IF;
+
+    insert into I_PROJ_PROJTYPE (PROJECT_ID, PROJECT_TYPE_NAME)
+    values (p_project_ID, p_projType);
+
+    COMMIT;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('No data here bro, it is NULL.');
+    ROLLBACK;
+    WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is: ' || SQLERRM);
+    ROLLBACK;
+END;
+
+-- 5)
+create or replace procedure ADD_BUDGET_ITEM_SP (
+p_projectID             IN INTEGER,
+p_description           IN VARCHAR,   
+p_budgetAmt             IN NUMBER
+)
+IS
+counter number;
+errMsg_txt varchar(50);
+ex_error exception;
+description varchar(80);
+
+CURSOR cur_description IS
+    SELECT BUDGET_LINE_ITEM_DESCRIPTION
+    FROM I_BUDGET
+    WHERE project_ID = p_projectID;
+
+BEGIN
+/*
+Add a budget item to an existing project.  The procedure should check that the 
+indicated project exists, and generate an error message if it does not.  
+The budget item description must not be NULL.  
+If a budget item with the same description already exists for the project, 
+then the procedure should generate an error message and not insert a duplicate 
+budget line item.
+*/
+    if p_description is NULL THEN
+    errMSG_txt := 'The input ' || p_description || ' is NULL.';
+    RAISE ex_error;
+    
+    elsif p_projectID is NULL THEN
+    errMSG_txt := 'The input ' || p_projectID || ' is NULL.';
+    RAISE ex_error;
+    end if;
+
+    select count(*)
+    into counter
+    from I_PROJECT
+    where I_PROJECT.PROJECT_ID = p_projectID;
+
+    if counter = 0 then
+    errMSG_txt := 'Project ID ' || p_projectID || ' not found.';
+    RAISE ex_error;
+
+    elsif p_projectID < 0 then
+    errMsg_txt := 'The input parameter ' || p_projectID || ' is negative';
+    RAISE ex_error;    
+    end if;
+
+    OPEN cur_description;
+
+    LOOP
+    FETCH cur_description INTO description;
+    EXIT WHEN cur_description%NOTFOUND;
+    if description = p_description THEN
+    errMSG_txt := 'The description "' || p_description || '" already exist.';
+    RAISE ex_error;
+    end if;
+    END LOOP;
+
+    CLOSE cur_description;
+
+    insert into I_BUDGET(PROJECT_ID, BUDGET_LINE_ITEM_DESCRIPTION, BUDGET_LINE_ITEM_AMOUNT)
+    values (p_projectID, p_description, p_budgetAmt);
+
+    COMMIT;
+
+    EXCEPTION
+    WHEN ex_error THEN
+    DBMS_OUTPUT.PUT_LINE(errMsg_txt);
+    ROLLBACK;
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('The error code is: ' || SQLCODE);
+    DBMS_OUTPUT.PUT_LINE('The error msg is: ' || SQLERRM);
+    ROLLBACK;
+END;
+
